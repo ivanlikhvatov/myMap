@@ -5,8 +5,11 @@ import java.util.*;
 public class MyHashMap<K,V> implements MyMap<K,V> {
 
     private MyHashMap.Node<K, V>[] table;
-    private Set<MyMap.Entry<K, V>> entrySet;
     private int size;
+
+    MyHashMap.Node<K, V> newNode(int hash, K key, V value, MyHashMap.Node<K, V> next) {
+        return new MyHashMap.Node(hash, key, value, next);
+    }
 
     public int size() {
         return this.size;
@@ -58,10 +61,6 @@ public class MyHashMap<K,V> implements MyMap<K,V> {
 
         }
         return null;
-    }
-
-    MyHashMap.Node<K, V> newNode(int hash, K key, V value, MyHashMap.Node<K, V> next) {
-        return new MyHashMap.Node(hash, key, value, next);
     }
 
     public V get(Object key) {
@@ -127,18 +126,12 @@ public class MyHashMap<K,V> implements MyMap<K,V> {
 
                     previousNode = p;
                     p = p.next;
-
-
                 }
             }
-
-
         }
 
         return null;
     }
-
-
 
     static final int hash(Object key) {
         return key == null ? 0 : (key.hashCode());
