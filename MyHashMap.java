@@ -2,144 +2,127 @@ package myMap;
 
 import java.util.*;
 
-public class MyHashMap<K,V> implements MyMap<K,V> {
-
-    private MyHashMap.Node<K, V>[] table;
+public class MyHashMap<K,V> implements MyMap<K,V>{
     private int size;
-
-    MyHashMap.Node<K, V> newNode(int hash, K key, V value, MyHashMap.Node<K, V> next) {
-        return new MyHashMap.Node(hash, key, value, next);
-    }
+    private Node<K,V>[] table;
 
     public int size() {
-        return this.size;
+        return size;
     }
 
     public V put(K key, V value) {
-        return this.putVal(hash(key), key, value);
+        return putVal(key, value, hash(key));
     }
 
-    public V putVal(int hash, K key, V value){
-        MyHashMap.Node[] tab;
+    final V putVal(K key, V value, int hash){
+        Node<K,V>[] tab;
         int n;
 
-        if ((tab = this.table) == null || (n = tab.length) == 0) {
-            n = (tab = this.resize()).length;
+        if ((tab = this.table) == null || (n = tab.length) == 0){
+            n = (tab = resize()).length;
         }
 
-        Object p;
         int i;
-        if ((p = tab[i = n - 1 & hash]) == null) {
-            tab[i] = this.newNode(hash, key, value, (MyHashMap.Node)null);
-            size++;
-        }else{
-            Object pKey;
-            Object newNode;
-            if (((MyHashMap.Node)p).hash == hash && ((pKey = ((MyHashMap.Node)p).key) == key || key != null && key.equals(pKey))){
-                newNode = p;
-            } else {
+        Node<K,V> node;
+        V oldValue = null;
 
-                while (true){
-                    if ((newNode = ((MyHashMap.Node)p).next) == null) {
-                        ((MyHashMap.Node)p).next = this.newNode(hash, key, value, (MyHashMap.Node)null);
-                        size++;
-                        break;
-                    }
+        if (tab[i = n - 1 & hash] == null){
+            node = newNode(hash, key, value);
+            tab[i] = node;
+        } else {
+            node = tab[i];
 
-                    if (((MyHashMap.Node)newNode).hash == hash && ((pKey = ((MyHashMap.Node)newNode).key) == key || key != null && key.equals(pKey))) {
-                        break;
-                    }
-
-                    p = newNode;
+            while(true){
+                if (node.hash == hash && Objects.equals(key, node.key)){
+                    oldValue = node.value;
+                    node.value = value;
+                    break;
                 }
-            }
 
-            if (newNode != null) {
-                V oldValue = (V) ((Node)newNode).value; //TODO
-                return oldValue;
-            }
+                if (node.next == null){
+                    node.next = newNode(hash, key, value);
+                    break;
+                }
 
+                node = node.next;
+            }
         }
-        return null;
+
+        if (++this.size > table.length){
+            resize();
+        }
+
+        return oldValue;
     }
 
-    public V get(Object key) {
-        MyHashMap.Node e;
-        return (e = this.getNode(hash(key), key)) == null ? null : (V)e.value;
+    public V get(K key) {
+        Node<K,V> e;
+        return (e = this.getNode(hash(key), key)) == null ? null : e.value;
     }
 
-    final MyHashMap.Node<K, V> getNode(int hash, Object key) {
-        MyHashMap.Node[] tab;
-        MyHashMap.Node first;
+    final Node<K,V> getNode(int hash, K key){
+        Node<K,V>[] tab = this.table;
+        Node<K,V> node;
         int n;
-        if ((tab = this.table) != null && (n = tab.length) > 0 && (first = tab[n - 1 & hash]) != null) {
-            Object k;
-            if (first.hash == hash && ((k = first.key) == key || key != null && key.equals(k))) {
-                return first;
-            }
 
-            MyHashMap.Node e;
-            if ((e = first.next) != null) {
-                do {
-                    if (e.hash == hash && ((k = e.key) == key || key != null && key.equals(k))) {
-                        return e;
-                    }
-                } while((e = e.next) != null);
+        if (tab != null && (n = tab.length) != 0 && (node = tab[n - 1 & hash]) != null){
+
+            while (true){
+                if (node.hash == hash && (Objects.equals(node.key, key))){
+                    return node;
+                }
+
+                if (node.next == null){
+                    break;
+                }
+
+                node = node.next;
             }
         }
 
         return null;
     }
 
-    public V remove(Object key) {
-        MyHashMap.Node e;
-        return (e = this.removeNode(hash(key), key)) == null ? null : (V) e.value;
+    public V remove(K key) {
+        Node<K,V> e;
+        return (e = this.removeNode(hash(key), key)) == null ? null : e.value;
     }
 
-    final MyHashMap.Node<K, V> removeNode(int hash, Object key) {
-        MyHashMap.Node[] tab;
-        MyHashMap.Node p;
-        MyHashMap.Node previousNode = null;
+    final Node<K, V> removeNode(int hash, Object key) {
+        Node<K,V>[] tab;
+        Node<K,V> node;
+        Node<K,V> previousNode = null;
         int n;
         int index;
 
-        if ((tab = this.table) != null && (n = tab.length) > 0 && (p = tab[index = n - 1 & hash]) != null){
-            if (p.next == null){
-                this.table[index] = null;
-                size--;
-                return (MyHashMap.Node)p;
-            } else {
-                while (true){
-                    if (p.hash == hash && (p.key == key || (p.key != null && p.key.equals(key)))){
-                        if (previousNode == null){
-                            this.table[index] = (MyHashMap.Node)p.next;
-                        } else {
-                            previousNode.next = p.next;
-                        }
-                        size--;
-                        return (MyHashMap.Node)p;
+        if ((tab = this.table) != null && (n = tab.length) > 0 && (node = tab[index = n - 1 & hash]) != null){
+            while (true){
+                if (node.hash == hash && (Objects.equals(node.key, key))){
+                    if (previousNode == null){
+                        this.table[index] = node.next;
+                    } else {
+                        previousNode.next = node.next;
                     }
-
-                    if (p.next == null){
-                        break;
-                    }
-
-                    previousNode = p;
-                    p = p.next;
+                    size--;
+                    return node;
                 }
+                if (node.next == null){
+                    break;
+                }
+                previousNode = node;
+                node = node.next;
             }
         }
 
         return null;
     }
 
-    static final int hash(Object key) {
+    static int hash(Object key){
         return key == null ? 0 : (key.hashCode());
     }
 
-    final MyHashMap.Node<K,V>[] resize(){
-        MyHashMap.Node<K, V>[] oldTab = this.table;
-
+    final Node<K,V>[] resize(){
+        Node<K, V>[] oldTab = this.table;
         int oldCap = oldTab == null ? 0 : oldTab.length;
         int newCap;
 
@@ -153,21 +136,62 @@ public class MyHashMap<K,V> implements MyMap<K,V> {
             newCap = 16;
         }
 
-        MyHashMap.Node<K, V>[] newTab = new MyHashMap.Node[newCap];
+        Node<K, V>[] newTab = new Node[newCap];
+        Node<K,V> oldNode;
+        Node<K,V> newNode;
         this.table = newTab;
 
+        if (oldTab != null){
+            for (int i = 0; i < oldCap; i++){
+                if ((oldNode = oldTab[i]) != null) {
+                    oldTab[i] = null;
+                    List<Node<K,V>> nextNodesInOldNode = new ArrayList<>();
+
+                    while (true){
+                        nextNodesInOldNode.add(oldNode);
+
+                        if (oldNode.next == null){
+                            break;
+                        }
+
+                        oldNode = oldNode.next;
+                    }
+
+                    for (Node<K,V> node : nextNodesInOldNode) {
+                        if ((newNode = newTab[node.hash & newCap - 1]) == null){
+                            node.next = null;
+                            newTab[node.hash & newCap - 1] = node;
+                        }else {
+                            while (true){
+                                if (newNode.next == null){
+                                    node.next = null;
+                                    newNode.next = node;
+                                    break;
+                                }
+
+                                newNode = newNode.next;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return newTab;
     }
 
-    static class Node<K, V> implements MyMap.Entry<K, V> {
-        final int hash;
-        final K key;
-        V value;
-        MyHashMap.Node<K, V> next;
+    final Node<K, V> newNode(int hash, K key, V value) {
+        return new Node<>(hash, key, value, null);
+    }
 
-        Node(int hash, K key, V value, MyHashMap.Node<K, V> next) {
-            this.hash = hash;
+    static class Node<K,V> implements Entry<K, V> {
+        final K key;
+        final int hash;
+         V value;
+         Node<K,V> next;
+
+        public Node(int hash, K key, V value, Node<K, V> next) {
             this.key = key;
+            this.hash = hash;
             this.value = value;
             this.next = next;
         }
@@ -200,9 +224,7 @@ public class MyHashMap<K,V> implements MyMap<K,V> {
             } else {
                 if (o instanceof Map.Entry) {
                     MyMap.Entry<?, ?> e = (MyMap.Entry)o;
-                    if (Objects.equals(this.key, e.getKey()) && Objects.equals(this.value, e.getValue())) {
-                        return true;
-                    }
+                    return Objects.equals(this.key, e.getKey()) && Objects.equals(this.value, e.getValue());
                 }
 
                 return false;

@@ -1,15 +1,15 @@
 package myMap;
 
-public interface MyMap<K, V> {
+public interface MyMap<K,V>{
     int size();
 
-    V put(K key, V value);
+    V put (K key, V value);
 
-    V get(Object o);
+    V get(K key);
 
-    V remove(Object key);
+    V remove(K object);
 
-    interface Entry<K, V> {
+    interface Entry<K,V>{
         K getKey();
 
         V getValue();
